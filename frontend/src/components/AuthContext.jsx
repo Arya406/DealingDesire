@@ -11,23 +11,42 @@ export const AuthProvider = ({ children }) => {
   // Initialize auth state on app load
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = localStorage.getItem('token');
-      const savedUser = localStorage.getItem('user');
+      try {
+        const token = localStorage.getItem('token');
+        const savedUser = localStorage.getItem('user');
 
-      if (token && savedUser) {
-        try {
-          // Verify token with backend
-          const res = await API.get('/auth/me', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          setUser(res.data);
-          localStorage.setItem('user', JSON.stringify(res.data));
-        } catch (error) {
-          console.error('Failed to verify token:', error);
-          // Don't redirect here, let the component handle it
+        if (token) {
+          try {
+            // Set the token in the request headers
+            API.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            
+            // Verify token and get user data
+            const res = await API.get('/auth/me');
+            
+            // If we have a saved user, use it, otherwise use the one from the API
+            const userData = savedUser ? JSON.parse(savedUser) : res.data;
+            
+            // Update state and localStorage
+            setUser(userData);
+            localStorage.setItem('user', JSON.stringify(userData));
+          } catch (error) {
+            console.error('Token verification failed:', error);
+            // Clear invalid auth data
+            delete API.defaults.headers.common['Authorization'];
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+          }
+        } else {
+          // No token, ensure user is cleared
+          setUser(null);
         }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     initializeAuth();
@@ -37,13 +56,27 @@ export const AuthProvider = ({ children }) => {
       const res = await API.post('/auth/login', { email, password });
       const { token, user } = res.data;
       
+      if (!token) {
+        throw new Error('No token received from server');
+      }
+      
+      // Store token and user data
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      
+      // Set the token in the request headers for subsequent requests
+      API.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Update state
       setUser(user);
       
-      return { success: true, user }; // Make sure to return the user object
+      return { success: true, user };
     } catch (error) {
       console.error('Login failed:', error);
+      // Clear any partial auth data on failed login
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
       return { 
         success: false, 
         error: error.response?.data?.message || 'Login failed. Please try again.' 
@@ -65,12 +98,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-    // Return the path to redirect to after logout
-    return '/';
+  const logout = async () => {
+    try {
+      // Call backend logout if needed
+      await API.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear all auth data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Update state
+      setUser(null);
+      
+      // Redirect to home page
+      window.location.href = '/';
+    }
   };
 
   const updateUser = (userData) => {

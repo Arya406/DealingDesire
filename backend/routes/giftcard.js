@@ -7,8 +7,12 @@ const {
   purchaseGiftCard
 } = require('../controllers/giftcardController');
 
-router.post('/', auth, createGiftCard);
-router.get('/', getAllGiftCards);
-router.patch('/purchase/:id', auth, purchaseGiftCard);
+// Define routes with proper path definitions
+router.route('/')
+  .post(auth, createGiftCard)
+  .get(getAllGiftCards);
+
+router.route('/purchase/:id')
+  .patch(auth, purchaseGiftCard);
 
 module.exports = router;
