@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import AuthModal from '../components/AuthModal';
 import { 
   FiSearch, 
   FiShoppingCart, 
@@ -12,7 +15,7 @@ import {
   FiShield, 
   FiArrowRight, 
   FiZap, 
-  FiGift 
+  FiGift
 } from 'react-icons/fi';
 import { FaTruck, FaShieldAlt, FaHeadset, FaGift as FaGiftSolid, FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
 import { BsStarFill, BsStarHalf, BsStar } from 'react-icons/bs';
@@ -20,8 +23,21 @@ import { HiOutlineMail, HiOutlineArrowRight } from 'react-icons/hi';
 
 import './Home.css';
 
-const home = () => {
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+const Home = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [authModal, setAuthModal] = useState({
+    isOpen: false,
+    mode: 'login' // 'login' or 'register'
+  });
+
+  const handleAccountClick = () => {
+    setAuthModal({ isOpen: true, mode: 'login' });
+  };
+
+  const handleAuthSuccess = (action) => {
+    toast.success(`Successfully ${action === 'login' ? 'signed in' : 'registered'}!`);
+    // You can add additional logic here after successful auth
+  };
 
   return (
     <div className="home">
@@ -50,7 +66,11 @@ const home = () => {
               <FiShoppingCart />
               <span className="cart-count">0</span>
             </button>
-            <button className="account-btn">
+            <button 
+              className="account-btn" 
+              onClick={handleAccountClick}
+              aria-label="Account"
+            >
               <FiUser />
             </button>
             <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -59,6 +79,15 @@ const home = () => {
           </div>
         </div>
       </nav>
+      
+      <AuthModal
+        isOpen={authModal.isOpen}
+        onClose={() => setAuthModal({ ...authModal, isOpen: false })}
+        initialMode={authModal.mode}
+        onSuccess={handleAuthSuccess}
+      />
+      
+
 
       {/* Hero Section */}
       <header className="hero">
@@ -317,4 +346,4 @@ const home = () => {
   );
 };
 
-export default home;
+export default Home;

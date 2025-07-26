@@ -1,12 +1,24 @@
 // src/components/ProtectedRoute.jsx
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from './AuthContext';
 
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
-  if (!token) {
-    return <Navigate to="/login" />;
+  if (isLoading) {
+    // Show loading spinner while checking auth
+    return (
+      <div className="full-page-loader">
+        <div className="spinner"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    // Redirect to home page if not authenticated
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   return children;

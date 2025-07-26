@@ -1,30 +1,53 @@
+// src/App.jsx
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Login from './pages/login';
-import Register from './pages/register';
-import Dashboard from './pages/dashboard'; // <- create this
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Dashboard from './pages/dashboard';
 import Home from './pages/home';
 import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider, useAuth } from './components/AuthContext';
 
+// Wrapper component to handle auth redirects
+const AuthWrapper = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Redirect to dashboard if already authenticated and trying to access auth pages
+  if (isAuthenticated && (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register')) {
+    return <Navigate to="/dashboard" replace state={{ from: location }} />;
+  }
+
+  return children;
+};
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+      <AuthProvider>
+        <AuthWrapper>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            
+            {/* Protected Routes */}
+            <Route
+              path="/dashboard/*"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
 
-        {/* Protected Dashboard Route */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
+            {/* Catch-all route */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AuthWrapper>
+        
+        {/* Toast notifications */}
+       
+      </AuthProvider>
     </BrowserRouter>
   );
 }

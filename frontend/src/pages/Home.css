@@ -1425,6 +1425,85 @@ section {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
 }
 
+/* Toast Notification Styles */
+.Toastify__toast {
+  border-radius: var(--radius);
+  padding: 1rem;
+  box-shadow: var(--shadow);
+  font-family: inherit;
+}
+
+.Toastify__toast--info {
+  background: var(--background);
+  color: var(--text-color);
+}
+
+.Toastify__toast-body {
+  padding: 0;
+  margin: 0;
+}
+
+.auth-toast {
+  padding: 0.5rem;
+}
+
+.auth-toast h4 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-color);
+  font-size: 1.1rem;
+}
+
+.auth-toast p {
+  margin: 0 0 1rem 0;
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.auth-buttons .btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-buttons .btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+  border: 1px solid var(--primary-color);
+}
+
+.auth-buttons .btn-primary:hover {
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
+}
+
+.auth-buttons .btn-outline {
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+
+.auth-buttons .btn-outline:hover {
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+/* Make sure the toast is above other elements */
+.Toastify__toast-container {
+  z-index: 10000;
+}
+
 /* Responsive Styles */
 @media (max-width: 992px) {
   .nav-links {
