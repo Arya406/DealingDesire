@@ -33,6 +33,11 @@
   transition: all 0.3s ease;
   max-height: 90vh;
   overflow-y: auto;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.auth-modal::-webkit-scrollbar {
+  display: none;
 }
 
 .auth-modal.active {
@@ -107,11 +112,12 @@
 
 .input-with-icon {
   position: relative;
+  
 }
 
 .form-icon {
   position: absolute;
-  left: 1rem;
+  left: 0.1rem;
   top: 50%;
   transform: translateY(-50%);
   color: #9ca3af;

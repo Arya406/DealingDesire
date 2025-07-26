@@ -120,12 +120,12 @@ const handleSubmit = async (e) => {
               <div className="form-group">
                 <label htmlFor="username" className="form-label">Username</label>
                 <div className="input-with-icon">
-                  <FiUser className="form-icon" size={18} />
+                <FiUser className="form-icon" size={18} />
                   <input
                     id="username"
                     name="username"
                     type="text"
-                    placeholder="johndoe"
+                    placeholder ="Username"
                     value={formData.username}
                     onChange={handleChange}
                     required

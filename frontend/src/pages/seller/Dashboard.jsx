@@ -27,12 +27,8 @@ const SellerDashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      if (!user?._id) {
-        throw new Error('User not authenticated');
-      }
-
-      const response = await fetch(`/api/giftcards/seller/${user._id}`, {
+    
+      const response = await fetch(`http://localhost:5000/api/giftcards`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -74,8 +70,8 @@ const SellerDashboard = () => {
     e.preventDefault();
     try {
       const url = currentCard 
-        ? `/api/giftcards/${currentCard._id}`
-        : '/api/giftcards';
+        ? `http://localhost:5000/api/giftcards/${currentCard._id}`
+        : 'http://localhost:5000/api/giftcards';
       const method = currentCard ? 'PUT' : 'POST';
       
       const response = await fetch(url, {
@@ -122,7 +118,7 @@ const SellerDashboard = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this gift card?')) {
       try {
-        const response = await fetch(`/api/giftcards/${id}`, {
+        const response = await fetch(`http://localhost:5000/api/giftcards/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -136,6 +132,32 @@ const SellerDashboard = () => {
       } catch (error) {
         toast.error(error.message);
       }
+    }
+  };
+
+  const handleStatusChange = async (cardId, newStatus) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/giftcards/${cardId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (!response.ok) throw new Error('Failed to update status');
+
+      // Update the local state to reflect the change
+      setGiftCards(giftCards.map(card => 
+        card._id === cardId ? { ...card, status: newStatus } : card
+      ));
+      
+      toast.success('Status updated successfully!');
+    } catch (error) {
+      toast.error(error.message);
+      // Re-fetch to ensure UI is in sync with the server
+      fetchGiftCards();
     }
   };
 
@@ -245,9 +267,16 @@ const SellerDashboard = () => {
                       <td>${card.value}</td>
                       <td>${card.sellingPrice}</td>
                       <td>
-                        <span className={`status-badge ${card.status === 'available' ? 'status-available' : 'status-sold'}`}>
-                          {card.status}
-                        </span>
+                        <select
+                          value={card.status || 'available'}
+                          onChange={(e) => handleStatusChange(card._id, e.target.value)}
+                          className={`form-select status-select ${
+                            card.status === 'available' ? 'status-available' : 'status-sold'
+                          }`}
+                        >
+                          <option value="available">Available</option>
+                          <option value="sold">Sold</option>
+                        </select>
                       </td>
                       <td>
                         <button
