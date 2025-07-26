@@ -49,14 +49,14 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     setError('');
   };
 
-  const handleSubmit = async (e) => {
+  // In AuthModal.jsx, update the handleSubmit function
+const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-
+  
     try {
       let result;
-      
       if (mode === 'login') {
         result = await login(formData.email, formData.password);
       } else {
@@ -68,15 +68,14 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
           position: 'top-center',
           autoClose: 2000,
           hideProgressBar: true,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
         });
         
+        // Close modal after a short delay
         setTimeout(() => {
           onClose();
-          const from = location.state?.from?.pathname || '/dashboard';
-          navigate(from, { replace: true });
+          // Redirect based on user role
+          const dashboardPath = result.user.role === 'seller' ? '/seller/dashboard' : '/buyer/dashboard';
+          navigate(dashboardPath, { replace: true });
         }, 1500);
       } else {
         setError(result.error || 'An error occurred. Please try again.');
@@ -88,7 +87,6 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
       setIsLoading(false);
     }
   };
-
   if (!isOpen && !isMounted) return null;
 
   return (

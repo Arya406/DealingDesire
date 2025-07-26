@@ -32,7 +32,6 @@ export const AuthProvider = ({ children }) => {
 
     initializeAuth();
   }, []);
-
   const login = async (email, password) => {
     try {
       const res = await API.post('/auth/login', { email, password });
@@ -42,7 +41,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       
-      return { success: true, user };
+      return { success: true, user }; // Make sure to return the user object
     } catch (error) {
       console.error('Login failed:', error);
       return { 

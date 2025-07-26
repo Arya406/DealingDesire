@@ -1,52 +1,42 @@
-// src/App.jsx
+// In App.jsx
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import Dashboard from './pages/dashboard';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './components/AuthContext';
+import RoleBasedRoute from './components/RoleBasedRoute';
 import Home from './pages/home';
-import ProtectedRoute from './components/ProtectedRoute';
-import { AuthProvider, useAuth } from './components/AuthContext';
-
-// Wrapper component to handle auth redirects
-const AuthWrapper = ({ children }) => {
-  const { isAuthenticated } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  // Redirect to dashboard if already authenticated and trying to access auth pages
-  if (isAuthenticated && (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/register')) {
-    return <Navigate to="/dashboard" replace state={{ from: location }} />;
-  }
-
-  return children;
-};
+import BuyerDashboard from './pages/buyer/Dashboard';
+import SellerDashboard from './pages/seller/Dashboard';
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AuthWrapper>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            
-            {/* Protected Routes */}
-            <Route
-              path="/dashboard/*"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Catch-all route */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AuthWrapper>
-        
-        {/* Toast notifications */}
-       
+        <Routes>
+          <Route path="/" element={<Home />} />
+          
+          {/* Buyer Routes */}
+          <Route
+            path="/buyer/*"
+            element={
+              <RoleBasedRoute allowedRoles={['buyer']}>
+                <BuyerDashboard />
+              </RoleBasedRoute>
+            }
+          />
+          
+          {/* Seller Routes */}
+          <Route
+            path="/seller/*"
+            element={
+              <RoleBasedRoute allowedRoles={['seller']}>
+                <SellerDashboard />
+              </RoleBasedRoute>
+            }
+          />
+          
+          {/* Catch-all route */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </AuthProvider>
     </BrowserRouter>
   );
