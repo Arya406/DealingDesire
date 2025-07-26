@@ -4,13 +4,22 @@ const auth = require('../middleware/authMiddleware');
 const {
   createGiftCard,
   getAllGiftCards,
+  getSellerGiftCards,
+  updateGiftCard,
+  deleteGiftCard,
   purchaseGiftCard
 } = require('../controllers/giftcardController');
 
-// Define routes with proper path definitions
 router.route('/')
   .post(auth, createGiftCard)
   .get(getAllGiftCards);
+
+router.route('/seller/:sellerId')
+  .get(auth, getSellerGiftCards);
+
+router.route('/:id')
+  .put(auth, updateGiftCard)
+  .delete(auth, deleteGiftCard);
 
 router.route('/purchase/:id')
   .patch(auth, purchaseGiftCard);

@@ -12,7 +12,7 @@ exports.createGiftCard = async (req, res) => {
       image,
       seller: req.user._id
     });
-    res.json(newCard);
+    res.status(201).json(newCard);
   } catch (err) {
     res.status(500).json({ message: 'Error creating gift card' });
   }
@@ -24,6 +24,49 @@ exports.getAllGiftCards = async (req, res) => {
     res.json(cards);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching gift cards' });
+  }
+};
+
+exports.getSellerGiftCards = async (req, res) => {
+  try {
+    const cards = await GiftCard.find({ seller: req.params.sellerId });
+    res.json(cards);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching seller gift cards' });
+  }
+};
+
+exports.updateGiftCard = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const card = await GiftCard.findById(id);
+    
+    if (!card) return res.status(404).json({ message: 'Gift card not found' });
+    if (card.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this gift card' });
+    }
+
+    const updatedCard = await GiftCard.findByIdAndUpdate(id, req.body, { new: true });
+    res.json(updatedCard);
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating gift card' });
+  }
+};
+
+exports.deleteGiftCard = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const card = await GiftCard.findById(id);
+    
+    if (!card) return res.status(404).json({ message: 'Gift card not found' });
+    if (card.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to delete this gift card' });
+    }
+
+    await GiftCard.findByIdAndDelete(id);
+    res.json({ message: 'Gift card deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error deleting gift card' });
   }
 };
 
