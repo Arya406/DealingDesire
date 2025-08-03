@@ -48,24 +48,11 @@ const Home = () => {
             <h2>DesireDeal</h2>
           </div>
           
-          <div className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
-            <a href="#" className="active">Home</a>
-            <a href="#">Shop</a>
-            <a href="#">Categories</a>
-            <a href="#">Deals</a>
-            <a href="#">About</a>
-            <a href="#">Contact</a>
-          </div>
+        
           
           <div className="nav-actions">
-            <div className="search-box">
-              <input type="text" placeholder="Search products..." />
-              <FiSearch className="search-icon" />
-            </div>
-            <button className="cart-btn">
-              <FiShoppingCart />
-              <span className="cart-count">0</span>
-            </button>
+           
+            
             <button 
               className="account-btn" 
               onClick={handleAccountClick}

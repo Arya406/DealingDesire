@@ -1,17 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../components/AuthContext';
-import { toast } from 'react-toastify';
+import Chat from '../../components/Chat';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { FiPlus, FiEdit, FiTrash2, FiDollarSign, FiTag, FiImage, FiInfo } from 'react-icons/fi';
+import { 
+  FiPlus, FiEdit, FiTrash2, FiDollarSign, FiTag, FiImage, FiInfo, FiMessageSquare,
+  FiSearch, FiFilter, FiTrendingUp, FiEye, FiShoppingCart, FiCheckCircle, FiXCircle,
+  FiBarChart2, FiCalendar, FiDownload, FiUpload
+} from 'react-icons/fi';
 import './SellerDashboard.css';
 
 const SellerDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [giftCards, setGiftCards] = useState([]);
+  const [filteredGiftCards, setFilteredGiftCards] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentCard, setCurrentCard] = useState(null);
+  const [showChat, setShowChat] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -22,6 +29,22 @@ const SellerDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // New state for enhanced features
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [brandFilter, setBrandFilter] = useState('all');
+  const [selectedCards, setSelectedCards] = useState([]);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [analytics, setAnalytics] = useState({
+    totalCards: 0,
+    availableCards: 0,
+    soldCards: 0,
+    totalValue: 0,
+    totalRevenue: 0,
+    averagePrice: 0
+  });
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchGiftCards = async () => {
     try {
@@ -52,6 +75,53 @@ const SellerDashboard = () => {
   useEffect(() => {
     fetchGiftCards();
   }, [user?._id]);
+
+  // Calculate analytics whenever giftCards change
+  useEffect(() => {
+    const totalCards = giftCards.length;
+    const availableCards = giftCards.filter(card => card.status === 'available').length;
+    const soldCards = giftCards.filter(card => card.status === 'sold').length;
+    const totalValue = giftCards.reduce((sum, card) => sum + parseFloat(card.value || 0), 0);
+    const totalRevenue = giftCards
+      .filter(card => card.status === 'sold')
+      .reduce((sum, card) => sum + parseFloat(card.sellingPrice || 0), 0);
+    const averagePrice = totalCards > 0 ? totalValue / totalCards : 0;
+
+    setAnalytics({
+      totalCards,
+      availableCards,
+      soldCards,
+      totalValue,
+      totalRevenue,
+      averagePrice
+    });
+  }, [giftCards]);
+
+  // Filter gift cards based on search and filters
+  useEffect(() => {
+    let filtered = giftCards;
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(card =>
+        card.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        card.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        card.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(card => card.status === statusFilter);
+    }
+
+    // Brand filter
+    if (brandFilter !== 'all') {
+      filtered = filtered.filter(card => card.brand === brandFilter);
+    }
+
+    setFilteredGiftCards(filtered);
+  }, [giftCards, searchTerm, statusFilter, brandFilter]);
 
   const handleLogout = async () => {
     await logout();
@@ -161,6 +231,116 @@ const SellerDashboard = () => {
     }
   };
 
+  // Bulk action functions
+  const handleSelectCard = (cardId) => {
+    setSelectedCards(prev => 
+      prev.includes(cardId) 
+        ? prev.filter(id => id !== cardId)
+        : [...prev, cardId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedCards.length === filteredGiftCards.length) {
+      setSelectedCards([]);
+    } else {
+      setSelectedCards(filteredGiftCards.map(card => card._id));
+    }
+  };
+
+  const handleBulkStatusChange = async (newStatus) => {
+    if (selectedCards.length === 0) {
+      toast.warning('Please select cards to update');
+      return;
+    }
+
+    try {
+      const promises = selectedCards.map(cardId =>
+        fetch(`http://localhost:5000/api/giftcards/${cardId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ status: newStatus })
+        })
+      );
+
+      await Promise.all(promises);
+      
+      // Update local state
+      setGiftCards(giftCards.map(card => 
+        selectedCards.includes(card._id) ? { ...card, status: newStatus } : card
+      ));
+      
+      setSelectedCards([]);
+      toast.success(`${selectedCards.length} cards updated successfully!`);
+    } catch (error) {
+      toast.error('Failed to update some cards');
+      fetchGiftCards();
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedCards.length === 0) {
+      toast.warning('Please select cards to delete');
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete ${selectedCards.length} gift cards?`)) {
+      return;
+    }
+
+    try {
+      const promises = selectedCards.map(cardId =>
+        fetch(`http://localhost:5000/api/giftcards/${cardId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        })
+      );
+
+      await Promise.all(promises);
+      
+      setSelectedCards([]);
+      toast.success(`${selectedCards.length} cards deleted successfully!`);
+      fetchGiftCards();
+    } catch (error) {
+      toast.error('Failed to delete some cards');
+      fetchGiftCards();
+    }
+  };
+
+  // Get unique brands for filter
+  const getUniqueBrands = () => {
+    const brands = [...new Set(giftCards.map(card => card.brand).filter(Boolean))];
+    return brands.sort();
+  };
+
+  // Load unread message count
+  const loadUnreadCount = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/chat/unread-count', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUnreadCount(data.unreadCount);
+      }
+    } catch (error) {
+      console.error('Error loading unread count:', error);
+    }
+  };
+
+  // Load unread count on component mount
+  useEffect(() => {
+    loadUnreadCount();
+  }, []);
+
   return (
     <div className="seller-dashboard">
       <nav className="seller-nav">
@@ -179,6 +359,22 @@ const SellerDashboard = () => {
               >
                 <FiPlus className="mr-2" /> Add Gift Card
               </button>
+              
+              {/* Chat Button */}
+              <button
+                onClick={() => setShowChat(true)}
+                className="btn btn-secondary flex items-center relative"
+                title="Open Chat"
+              >
+                <FiMessageSquare className="mr-2" />
+                Messages
+                {unreadCount > 0 && (
+                  <span className="chat-badge">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              
               <span className="seller-welcome-text">Welcome, {user?.username}</span>
               <button
                 onClick={handleLogout}
@@ -192,15 +388,159 @@ const SellerDashboard = () => {
       </nav>
 
       <main className="seller-main">
+        {/* Analytics Section */}
+        {!loading && !error && (
+          <div className="analytics-section">
+            <div className="analytics-grid">
+              <div className="analytics-card">
+                <div className="analytics-icon">
+                  <FiTag />
+                </div>
+                <div className="analytics-content">
+                  <h3 className="analytics-value">{analytics.totalCards}</h3>
+                  <p className="analytics-label">Total Cards</p>
+                </div>
+              </div>
+              <div className="analytics-card">
+                <div className="analytics-icon available">
+                  <FiCheckCircle />
+                </div>
+                <div className="analytics-content">
+                  <h3 className="analytics-value">{analytics.availableCards}</h3>
+                  <p className="analytics-label">Available</p>
+                </div>
+              </div>
+              <div className="analytics-card">
+                <div className="analytics-icon sold">
+                  <FiShoppingCart />
+                </div>
+                <div className="analytics-content">
+                  <h3 className="analytics-value">{analytics.soldCards}</h3>
+                  <p className="analytics-label">Sold</p>
+                </div>
+              </div>
+              <div className="analytics-card">
+                <div className="analytics-icon revenue">
+                  <FiDollarSign />
+                </div>
+                <div className="analytics-content">
+                  <h3 className="analytics-value">${analytics.totalRevenue.toFixed(2)}</h3>
+                  <p className="analytics-label">Total Revenue</p>
+                </div>
+              </div>
+              <div className="analytics-card">
+                <div className="analytics-icon value">
+                  <FiTrendingUp />
+                </div>
+                <div className="analytics-content">
+                  <h3 className="analytics-value">${analytics.totalValue.toFixed(2)}</h3>
+                  <p className="analytics-label">Total Value</p>
+                </div>
+              </div>
+              <div className="analytics-card">
+                <div className="analytics-icon average">
+                  <FiBarChart2 />
+                </div>
+                <div className="analytics-content">
+                  <h3 className="analytics-value">${analytics.averagePrice.toFixed(2)}</h3>
+                  <p className="analytics-label">Average Price</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="seller-content">
           <div className="seller-content-header">
             <h2 className="seller-content-title">Your Gift Cards</h2>
             {!loading && (
               <div className="seller-content-count">
-                {giftCards.length} {giftCards.length === 1 ? 'item' : 'items'}
+                {filteredGiftCards.length} of {giftCards.length} {giftCards.length === 1 ? 'item' : 'items'}
               </div>
             )}
           </div>
+
+          {/* Search and Filter Section */}
+          {!loading && !error && giftCards.length > 0 && (
+            <div className="filters-section">
+              <div className="filters-row">
+                <div className="search-box">
+                  <FiSearch className="search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Search gift cards..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="search-input"
+                  />
+                </div>
+                <div className="filter-controls">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="filter-select"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="available">Available</option>
+                    <option value="sold">Sold</option>
+                    <option value="pending">Pending</option>
+                    <option value="expired">Expired</option>
+                  </select>
+                  <select
+                    value={brandFilter}
+                    onChange={(e) => setBrandFilter(e.target.value)}
+                    className="filter-select"
+                  >
+                    <option value="all">All Brands</option>
+                    {getUniqueBrands().map(brand => (
+                      <option key={brand} value={brand}>{brand}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bulk Actions */}
+          {selectedCards.length > 0 && (
+            <div className="bulk-actions">
+              <div className="bulk-actions-content">
+                <span className="bulk-actions-text">
+                  {selectedCards.length} card{selectedCards.length !== 1 ? 's' : ''} selected
+                </span>
+                <div className="bulk-actions-buttons">
+                  <button
+                    onClick={() => handleBulkStatusChange('available')}
+                    className="btn btn-success btn-sm"
+                  >
+                    <FiCheckCircle className="mr-2" />
+                    Mark Available
+                  </button>
+                  <button
+                    onClick={() => handleBulkStatusChange('sold')}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    <FiShoppingCart className="mr-2" />
+                    Mark Sold
+                  </button>
+                  <button
+                    onClick={handleBulkDelete}
+                    className="btn btn-danger btn-sm"
+                  >
+                    <FiTrash2 className="mr-2" />
+                    Delete Selected
+                  </button>
+                  <button
+                    onClick={() => setSelectedCards([])}
+                    className="btn btn-outline btn-sm"
+                  >
+                    <FiXCircle className="mr-2" />
+                    Clear Selection
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {loading ? (
             <div className="empty-state">
@@ -239,6 +579,14 @@ const SellerDashboard = () => {
               <table className="seller-table">
                 <thead>
                   <tr>
+                    <th>
+                      <input
+                        type="checkbox"
+                        checked={selectedCards.length === filteredGiftCards.length && filteredGiftCards.length > 0}
+                        onChange={handleSelectAll}
+                        className="table-checkbox"
+                      />
+                    </th>
                     <th>Title</th>
                     <th>Brand</th>
                     <th>Value</th>
@@ -248,8 +596,16 @@ const SellerDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {giftCards.map((card) => (
-                    <tr key={card._id}>
+                  {filteredGiftCards.map((card) => (
+                    <tr key={card._id} className={selectedCards.includes(card._id) ? 'selected-row' : ''}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedCards.includes(card._id)}
+                          onChange={() => handleSelectCard(card._id)}
+                          className="table-checkbox"
+                        />
+                      </td>
                       <td>
                         <div className="flex items-center">
                           {card.image && (
@@ -260,37 +616,58 @@ const SellerDashboard = () => {
                               style={{ height: '40px', width: '40px', objectFit: 'cover' }} 
                             />
                           )}
-                          {card.title}
+                          <div>
+                            <div className="font-medium text-gray-900">{card.title}</div>
+                            {card.description && (
+                              <div className="text-sm text-gray-500 truncate max-w-xs">
+                                {card.description}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
-                      <td>{card.brand}</td>
-                      <td>${card.value}</td>
-                      <td>${card.sellingPrice}</td>
+                      <td>
+                        <span className="brand-badge">{card.brand}</span>
+                      </td>
+                      <td>
+                        <span className="value-text">${card.value}</span>
+                      </td>
+                      <td>
+                        <span className="price-text">${card.sellingPrice}</span>
+                      </td>
                       <td>
                         <select
                           value={card.status || 'available'}
                           onChange={(e) => handleStatusChange(card._id, e.target.value)}
                           className={`form-select status-select ${
-                            card.status === 'available' ? 'status-available' : 'status-sold'
+                            card.status === 'available' ? 'status-available' : 
+                            card.status === 'sold' ? 'status-sold' :
+                            card.status === 'pending' ? 'status-pending' : 'status-expired'
                           }`}
                         >
                           <option value="available">Available</option>
                           <option value="sold">Sold</option>
+                          <option value="pending">Pending</option>
+                          <option value="expired">Expired</option>
                         </select>
                       </td>
                       <td>
-                        <button
-                          onClick={() => handleEdit(card)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
-                        >
-                          <FiEdit style={{ height: '20px', width: '20px' }} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(card._id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <FiTrash2 style={{ height: '20px', width: '20px' }} />
-                        </button>
+                        <div className="action-buttons">
+                          <button
+                            onClick={() => handleEdit(card)}
+                            className="action-btn edit-btn"
+                            title="Edit"
+                          >
+                            <FiEdit />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(card._id)}
+                            className="action-btn delete-btn"
+                            title="Delete"
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -300,6 +677,25 @@ const SellerDashboard = () => {
           )}
         </div>
       </main>
+
+      {/* Chat Component */}
+      <Chat 
+        isOpen={showChat} 
+        onClose={() => setShowChat(false)}
+      />
+      
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
 
       {isModalOpen && (
         <div className="modal-overlay">

@@ -20,7 +20,7 @@ exports.createGiftCard = async (req, res) => {
 
 exports.getAllGiftCards = async (req, res) => {
   try {
-    const cards = await GiftCard.find({ status: 'available' }).populate('seller', 'name email');
+    const cards = await GiftCard.find({ status: 'available' }).populate('seller', 'name email username');
     res.json(cards);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching gift cards' });
