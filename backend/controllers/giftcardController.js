@@ -18,18 +18,34 @@ exports.createGiftCard = async (req, res) => {
   }
 };
 
+// Get all gift cards (only available ones for marketplace)
 exports.getAllGiftCards = async (req, res) => {
   try {
-    const cards = await GiftCard.find({ status: 'available' }).populate('seller', 'name email username');
+    const cards = await GiftCard.find({ status: 'available' })
+      .populate('seller', 'name email username')
+      .select('-code'); // Don't expose the gift card code in public listings
     res.json(cards);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching gift cards' });
   }
 };
 
+// Get current user's gift cards (for dashboard)
+exports.getMyGiftCards = async (req, res) => {
+  try {
+    const cards = await GiftCard.find({ seller: req.user._id });
+    res.json(cards);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching your gift cards' });
+  }
+};
+
 exports.getSellerGiftCards = async (req, res) => {
   try {
-    const cards = await GiftCard.find({ seller: req.params.sellerId });
+    const cards = await GiftCard.find({ 
+      seller: req.params.sellerId,
+      status: 'available' 
+    }).select('-code'); // Don't expose the gift card code in public listings
     res.json(cards);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching seller gift cards' });

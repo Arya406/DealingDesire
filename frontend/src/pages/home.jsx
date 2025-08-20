@@ -51,7 +51,6 @@ const Home = () => {
         
           
           <div className="nav-actions">
-           
             
             <button 
               className="account-btn" 

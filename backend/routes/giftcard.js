@@ -1,27 +1,18 @@
 const express = require('express');
 const router = express.Router();
+const giftcardController = require('../controllers/giftcardController');
 const auth = require('../middleware/authMiddleware');
-const {
-  createGiftCard,
-  getAllGiftCards,
-  getSellerGiftCards,
-  updateGiftCard,
-  deleteGiftCard,
-  purchaseGiftCard
-} = require('../controllers/giftcardController');
 
-router.route('/')
-  .post(auth, createGiftCard)
-  .get(getAllGiftCards);
+// Public routes
+router.get('/', giftcardController.getAllGiftCards);
+router.get('/seller/:sellerId', giftcardController.getSellerGiftCards);
 
-router.route('/seller/:sellerId')
-  .get(auth, getSellerGiftCards);
-
-router.route('/:id')
-  .put(auth, updateGiftCard)
-  .delete(auth, deleteGiftCard);
-
-router.route('/purchase/:id')
-  .patch(auth, purchaseGiftCard);
+// Protected routes
+router.use(auth);
+router.get('/my-cards', giftcardController.getMyGiftCards);
+router.post('/', giftcardController.createGiftCard);
+router.put('/:id', giftcardController.updateGiftCard);
+router.delete('/:id', giftcardController.deleteGiftCard);
+router.post('/:id/purchase', giftcardController.purchaseGiftCard);
 
 module.exports = router;
