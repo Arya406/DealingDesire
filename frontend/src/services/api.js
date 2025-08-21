@@ -3,8 +3,9 @@ import axios from 'axios';
 // Create axios instance with default config
 const API = axios.create({
   baseURL: process.env.NODE_ENV === 'production' 
-    ? 'https://your-production-api.com/api' 
+    ? 'https://desiredealbackend-2.onrender.com/api' 
     : 'http://localhost:5000/api',
+
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',

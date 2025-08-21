@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: desiredeal-backend
+    env: node
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      # You'll need to set these in Render's dashboard after creating the service
+      - key: MONGO_URI
+        description: MongoDB connection string
+      - key: JWT_SECRET
+        description: Secret key for JWT token generation
+      - key: FRONTEND_URL
+        value: https://desire-deal.windsurf.build  # Update this after frontend deployment
